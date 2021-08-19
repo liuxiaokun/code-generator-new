@@ -1,7 +1,7 @@
-package ${entityPackage};
+package ${entityPackage}.entity;
 
 import lombok.Data;
-import ${entityPackage}.base.BaseEntity;
+import ${entityPackage}.entity.base.BaseEntity;
 <#list  importList as import>
 import ${import};
 </#list>
