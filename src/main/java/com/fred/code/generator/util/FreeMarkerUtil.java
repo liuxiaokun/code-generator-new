@@ -8,7 +8,6 @@ import freemarker.template.Template;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,38 +22,56 @@ import java.util.Map;
  */
 public class FreeMarkerUtil {
 
-    public static void main(String[] args) throws Exception {
+    public static void generateEntity(List<Field> fields, Map<String, Object> authorInfo, String basePackage,
+                                    String entityName, String tableComment) throws Exception {
         Map<String, Object> root = new HashMap<>(10);
-        root.put("entityPackage","com.fred.demo");
-        root.put("author","liuxiaokun");
-        root.put("version","1.0.0");
-        root.put("datetime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-        root.put("entityName","User");
-        root.put("tableComment","用户表");
+        root.putAll(authorInfo);
 
-        List<Field> fields = new ArrayList<>();
-        fields.add(new Field("String", "name", "姓名"));
-        fields.add(new Field("Integer", "age", "年龄"));
-        fields.add(new Field("LocalDate", "birthday", "生日"));
+        root.put("entityPackage", basePackage);
+        root.put("entityName", entityName);
+        root.put("tableComment", tableComment);
+
         root.put("fieldList", fields);
+        //根据 importList来生成importList
+        //root.put("importList", importList);
+
+        generateFile("entity.ftl", "E:/" + entityName + ".java", root);
+    }
+
+    private static void generateFile(String ftlFile, String generatedFilePath, Map<String, Object> params) throws Exception {
+        Configuration config = new Configuration();
+        config.setDirectoryForTemplateLoading(new File("E:/code/idea-code/code-generator/src/main/resources/templates/"));
+        config.setObjectWrapper(new DefaultObjectWrapper());
+        Template template = config.getTemplate(ftlFile);
+
+        File file = new File(generatedFilePath);
+        FileWriter fileWriter = new FileWriter(file);
+        BufferedWriter bw = new BufferedWriter(fileWriter);
+        template.process(params, bw);
+        bw.flush();
+        fileWriter.close();
+    }
+
+    public static Map<String, Object> buildAuthorInfo(String author, String version) {
+        Map<String, Object> authorInfo = new HashMap<>(10);
+        authorInfo.put("author", author);
+        authorInfo.put("version", version);
+        authorInfo.put("datetime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        return authorInfo;
+    }
+
+
+    public static void main(String[] args) throws Exception {
 
         List<String> importList = new ArrayList<>();
         importList.add("java.lang.String");
         importList.add("java.lang.Integer");
+        importList.add("java.lang.Double");
         importList.add("java.time.LocalDate");
-        root.put("importList",importList);
 
-        Configuration config = new Configuration();
-        config.setDirectoryForTemplateLoading(new File("E:/code/idea-code/code-generator/src/main/resources/templates/"));
-        config.setObjectWrapper(new DefaultObjectWrapper());
-        Template template = config.getTemplate("entity.ftl");
 
-        File file = new File("E:/User.java");
-        FileWriter fileWriter = new FileWriter(file);
-        BufferedWriter bw = new BufferedWriter(fileWriter);
-        template.process(root, bw);
-        bw.flush();
-        fileWriter.close();
+        //generateEntity(DatabaseUtil.getColumnInfo("t_user"), importList,)
     }
 
 }

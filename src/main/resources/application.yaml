@@ -1,8 +1,9 @@
 server:
   port: 9090
+spring:
+  datasource:
+    hikari:
+      data-source-properties:
+        nullCatalogMeansCurrent: true
 
-
-config:
-  data-type-mapping:
-    varchar: String
 

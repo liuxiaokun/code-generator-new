@@ -2,6 +2,8 @@ package com.fred.code.generator.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -15,6 +17,8 @@ import java.io.Serializable;
  */
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
+@ToString
 public class Field implements Serializable {
 
     /**
@@ -26,6 +30,12 @@ public class Field implements Serializable {
      * 字段名
      */
     private String name;
+
+    /**
+     * 是否为空, TRUE 意思是可为空， False意思是不可为空
+     */
+    private Boolean nullable;
+
 
     /**
      * 字段注释
