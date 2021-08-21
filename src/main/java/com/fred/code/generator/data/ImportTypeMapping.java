@@ -24,8 +24,8 @@ public class ImportTypeMapping {
         mapping.put("datetime", 3);
         mapping.put("double", 4);
         mapping.put("bigint", 5);
-        mapping.put("decimal", 5);
-        mapping.put("tinyint(1)", 6);
-        mapping.put("time", 7);
+        mapping.put("decimal", 6);
+        mapping.put("tinyint(1)", 7);
+        mapping.put("time", 8);
     }
 }
