@@ -22,5 +22,11 @@ public class Project {
 
     private String version;
 
+    private String templateDir;
+
+    private String outputDir;
+
+    private String basePackage;
+
     private DataSource datasource;
 }

@@ -10,6 +10,9 @@ project:
   name: demo-project
   version: 1.0.0
   author: liuxiaokun
+  templateDir: E:/code/idea-code/code-generator/src/main/resources/templates/
+  outputDir: E:/
+  basePackage: com.fred.demo
   datasource:
     driver: com.mysql.jdbc.Driver
     url: jdbc:mysql://hadoop001:3306/sqoop_test?useUnicode=true&characterEncoding=utf8

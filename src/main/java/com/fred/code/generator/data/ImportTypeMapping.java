@@ -15,12 +15,13 @@ public class ImportTypeMapping {
     static {
         mapping.put("String", "java.lang.String");
         mapping.put("Integer", "java.lang.Integer");
-        mapping.put("LocalDate", "java.time.LocalDate");
         mapping.put("Double", "java.lang.Double");
         mapping.put("Long", "java.lang.Long");
         mapping.put("BigDecimal", "java.math.BigDecimal");
         mapping.put("Boolean", "java.lang.Boolean");
+        mapping.put("LocalDate", "java.time.LocalDate");
         mapping.put("LocalTime", "java.time.LocalTime");
+        mapping.put("LocalDateTime", "java.time.LocalDateTime");
     }
 
 }

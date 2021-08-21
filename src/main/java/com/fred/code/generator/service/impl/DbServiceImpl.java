@@ -1,11 +1,15 @@
-package com.fred.code.generator.util;
+package com.fred.code.generator.service.impl;
 
 import com.fred.code.generator.pojo.FieldInfo;
+import com.fred.code.generator.pojo.Project;
 import com.fred.code.generator.pojo.TableInfo;
+import com.fred.code.generator.service.DbService;
+import com.fred.code.generator.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,30 +23,26 @@ import java.util.Map;
  * @date 2021/8/19 15:06
  */
 @Slf4j
-@Component
-public class DatabaseUtil {
+@Service
+public class DbServiceImpl implements DbService {
 
+    @Autowired
+    private Project project;
 
-    private static final String SQL = "SELECT * FROM ";
-
-    static {
-//        try {
-//            Class.forName("DRIVER");
-//        } catch (ClassNotFoundException e) {
-//            log.error("can not load jdbc driver", e);
-//        }
-    }
+    private final String SQL = "SELECT * FROM ";
 
     /**
      * 获取数据库连接
      *
      * @return
      */
-    public static Connection getConnection() {
+    private Connection getConnection() {
         Connection conn = null;
         try {
-            conn = DriverManager.getConnection("URL", "USERNAME", "PASSWORD");
-        } catch (SQLException e) {
+            Class.forName(project.getDatasource().getDriver());
+            conn = DriverManager.getConnection(project.getDatasource().getUrl(), project.getDatasource().getUsername(),
+                    project.getDatasource().getPassword());
+        } catch (SQLException | ClassNotFoundException e) {
             log.error("get connection failure", e);
         }
         return conn;
@@ -53,7 +53,7 @@ public class DatabaseUtil {
      *
      * @param conn
      */
-    public static void closeConnection(Connection conn) {
+    private void closeConnection(Connection conn) {
         if (conn != null) {
             try {
                 conn.close();
@@ -66,7 +66,8 @@ public class DatabaseUtil {
     /**
      * 获取数据库下的所有表名
      */
-    public static List<TableInfo> getTableInfos() {
+    @Override
+    public List<TableInfo> getTableInfos() {
         List<TableInfo> tableInfos = new ArrayList<>();
         Connection conn = getConnection();
         ResultSet rs = null;
@@ -101,7 +102,8 @@ public class DatabaseUtil {
      * @param tableName
      * @return
      */
-    public static List<FieldInfo> getColumnInfo(String tableName) {
+    @Override
+    public List<FieldInfo> getColumnInfo(String tableName) {
         Connection conn = getConnection();
         PreparedStatement pStemt = null;
         String tableSql = SQL + tableName;
@@ -143,26 +145,26 @@ public class DatabaseUtil {
         return fields;
     }
 
-    public static String getCommentByTableName(Connection conn, String tableName) {
+    private String getCommentByTableName(Connection conn, String tableName) {
         Statement stmt = null;
         String comment = "";
         try {
             stmt = conn.createStatement();
 
-        Map<String, String> map = new HashMap<String, String>();
-        ResultSet rs = stmt.executeQuery("SHOW CREATE TABLE " + tableName);
-        if (rs != null && rs.next()) {
-            String create = rs.getString(2);
-            comment = parse(create);
-        }
-        rs.close();
+            Map<String, String> map = new HashMap<String, String>();
+            ResultSet rs = stmt.executeQuery("SHOW CREATE TABLE " + tableName);
+            if (rs != null && rs.next()) {
+                String create = rs.getString(2);
+                comment = parse(create);
+            }
+            rs.close();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
         return comment;
     }
 
-    private static String parse(String all) {
+    private String parse(String all) {
         String comment = null;
         int index = all.indexOf("COMMENT='");
         if (index < 0) {
@@ -173,29 +175,7 @@ public class DatabaseUtil {
         return new String(comment.getBytes(Charset.defaultCharset()));
     }
 
-    public static String tableNameToEntityName(String tableName) {
-        tableName = tableName.toLowerCase();
-
-        if (tableName.contains("t_")) {
-            tableName = tableName.substring(2, tableName.length());
-        }
-        String camelName = "";
-        if (tableName.contains("_")) {
-            String[] words = tableName.split("_");
-
-            for (int i = 0; i < words.length; i++) {
-                String word = words[i];
-                if (word.length() > 0) {
-                    camelName += StringUtil.upperFirstCase(word);
-                }
-            }
-        } else {
-            camelName = tableName;
-        }
-        return StringUtil.upperFirstCase(camelName);
-    }
-
-    private static String underlineToCamel(String name) {
+    private String underlineToCamel(String name) {
         name = name.toLowerCase();
         String camelName = "";
         if (name.contains("_")) {
@@ -218,12 +198,7 @@ public class DatabaseUtil {
         return StringUtil.lowerFirstCase(camelName);
     }
 
-    public static void main1(String[] args) {
-        System.out.println(underlineToCamel("cn_name"));
-        System.out.println(underlineToCamel("device_name"));
-    }
-
-    private static void fillFieldTypeAndLength(FieldInfo field, String type) {
+    private void fillFieldTypeAndLength(FieldInfo field, String type) {
         if (type.startsWith("varchar")) {
             String length = type.substring("varchar(".length(), type.length() - 1);
             type = "String";
@@ -256,16 +231,5 @@ public class DatabaseUtil {
             type = "LocalDateTime";
         }
         field.setType(type);
-    }
-
-    public static void main(String[] args) {
-        List<TableInfo> tableInfos = getTableInfos();
-        System.out.println("tableInfos:" + tableInfos);
-        for (TableInfo tableInfo : tableInfos) {
-            for (FieldInfo field : getColumnInfo(tableInfo.getName())) {
-                System.out.println("column:" + field);
-
-            }
-        }
     }
 }
