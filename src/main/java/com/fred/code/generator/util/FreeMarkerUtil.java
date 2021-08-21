@@ -1,6 +1,8 @@
 package com.fred.code.generator.util;
 
-import com.fred.code.generator.pojo.Field;
+import com.fred.code.generator.data.ImportTypeMapping;
+import com.fred.code.generator.pojo.FieldInfo;
+import com.fred.code.generator.pojo.TableInfo;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
@@ -10,10 +12,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static com.fred.code.generator.util.DatabaseUtil.getTableInfos;
 
 /**
  * @author liuxiaokun
@@ -22,18 +23,25 @@ import java.util.Map;
  */
 public class FreeMarkerUtil {
 
-    public static void generateEntity(List<Field> fields, Map<String, Object> authorInfo, String basePackage,
+    public static void generateEntity(List<FieldInfo> fields, Map<String, Object> authorInfo, String basePackage,
                                     String entityName, String tableComment) throws Exception {
         Map<String, Object> root = new HashMap<>(10);
         root.putAll(authorInfo);
 
-        root.put("entityPackage", basePackage);
+        root.put("basePackage", basePackage);
         root.put("entityName", entityName);
         root.put("tableComment", tableComment);
 
         root.put("fieldList", fields);
         //根据 importList来生成importList
-        //root.put("importList", importList);
+        Set<String> importList = new HashSet<>();
+        for (FieldInfo field : fields) {
+            String importInfo = ImportTypeMapping.mapping.get(field.getType());
+            if(null != importInfo) {
+                importList.add(importInfo);
+            }
+        }
+        root.put("importList", importList);
 
         generateFile("entity.ftl", "E:/" + entityName + ".java", root);
     }
@@ -64,14 +72,13 @@ public class FreeMarkerUtil {
 
     public static void main(String[] args) throws Exception {
 
-        List<String> importList = new ArrayList<>();
-        importList.add("java.lang.String");
-        importList.add("java.lang.Integer");
-        importList.add("java.lang.Double");
-        importList.add("java.time.LocalDate");
-
-
-        //generateEntity(DatabaseUtil.getColumnInfo("t_user"), importList,)
+        List<TableInfo> tableInfos = getTableInfos();
+        System.out.println("tableInfos:" + tableInfos);
+        for (TableInfo tableInfo : tableInfos) {
+            Map<String, Object> author = buildAuthorInfo("liuxiaokun", "1.0.0");
+            generateEntity(DatabaseUtil.getColumnInfo(tableInfo.getName()), author, "com.fred.demo",
+                    DatabaseUtil.tableNameToEntityName(tableInfo.getName()), tableInfo.getComment());
+        }
     }
 
 }

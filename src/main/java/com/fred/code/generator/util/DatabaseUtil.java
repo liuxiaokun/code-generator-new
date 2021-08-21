@@ -1,13 +1,15 @@
 package com.fred.code.generator.util;
 
-import com.fred.code.generator.pojo.Field;
+import com.fred.code.generator.pojo.FieldInfo;
+import com.fred.code.generator.pojo.TableInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
 
-import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author liuxiaokun
@@ -21,8 +23,10 @@ public class DatabaseUtil {
     private static final String URL = "jdbc:mysql://hadoop001:3306/sqoop_test?useUnicode=true&characterEncoding=utf8";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "123456";
+    private static Map<String, String> mapping = new HashMap<>();
 
-    private static final String SQL = "SELECT * FROM ";// 数据库操作
+
+    private static final String SQL = "SELECT * FROM ";
 
     static {
         try {
@@ -65,17 +69,21 @@ public class DatabaseUtil {
     /**
      * 获取数据库下的所有表名
      */
-    public static List<String> getTableNames() {
-        List<String> tableNames = new ArrayList<>();
+    public static List<TableInfo> getTableInfos() {
+        List<TableInfo> tableInfos = new ArrayList<>();
         Connection conn = getConnection();
         ResultSet rs = null;
         try {
             //获取数据库的元数据
             DatabaseMetaData db = conn.getMetaData();
             //从元数据中获取到所有的表名
-            rs = db.getTables(null, null, null, new String[]{"TABLE"});
+            rs = db.getTables(null, "%", "%", new String[]{"TABLE"});
             while (rs.next()) {
-                tableNames.add(rs.getString(3));
+                TableInfo tableInfo = new TableInfo();
+                String tableName = rs.getString("TABLE_NAME");
+                tableInfo.setName(tableName);
+                tableInfo.setComment(getCommentByTableName(conn, tableName));
+                tableInfos.add(tableInfo);
             }
         } catch (SQLException e) {
             log.error("getTableNames failure", e);
@@ -87,7 +95,7 @@ public class DatabaseUtil {
                 log.error("close ResultSet failure", e);
             }
         }
-        return tableNames;
+        return tableInfos;
     }
 
     /**
@@ -96,26 +104,29 @@ public class DatabaseUtil {
      * @param tableName
      * @return
      */
-    public static List<Field> getColumnInfo(String tableName) {
+    public static List<FieldInfo> getColumnInfo(String tableName) {
         Connection conn = getConnection();
         PreparedStatement pStemt = null;
         String tableSql = SQL + tableName;
         //列名注释集合
-        List<Field> fields = new ArrayList<>();
+        List<FieldInfo> fields = new ArrayList<>();
         ResultSet rs = null;
         try {
             pStemt = conn.prepareStatement(tableSql);
             rs = pStemt.executeQuery("show full columns from " + tableName);
             while (rs.next()) {
-                Field field = new Field();
-                field.setComment(rs.getString("Comment"));
-                field.setType(rs.getString("Type"));
-                field.setName(rs.getString("Field"));
-                String aNull = rs.getString("Null");
+                FieldInfo field = new FieldInfo();
+                String name = underlineToCamel(rs.getString("Field"));
+                field.setName(name);
 
-                if("YES".equals(aNull)) {
+                fillFieldTypeAndLength(field, rs.getString("Type"));
+
+                String aNull = rs.getString("Null");
+                field.setComment(rs.getString("Comment"));
+
+                if ("YES".equals(aNull)) {
                     field.setNullable(Boolean.TRUE);
-                } else if("NO".equals(aNull)) {
+                } else if ("NO".equals(aNull)) {
                     field.setNullable(Boolean.FALSE);
                 }
                 fields.add(field);
@@ -135,11 +146,134 @@ public class DatabaseUtil {
         return fields;
     }
 
+    public static String getCommentByTableName(Connection conn, String tableName) {
+        Statement stmt = null;
+        String comment = "";
+        try {
+            stmt = conn.createStatement();
+
+        Map<String, String> map = new HashMap<String, String>();
+        ResultSet rs = stmt.executeQuery("SHOW CREATE TABLE " + tableName);
+        if (rs != null && rs.next()) {
+            String create = rs.getString(2);
+            comment = parse(create);
+        }
+        rs.close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return comment;
+    }
+
+    private static String parse(String all) {
+        String comment = null;
+        int index = all.indexOf("COMMENT='");
+        if (index < 0) {
+            return "";
+        }
+        comment = all.substring(index + 9);
+        comment = comment.substring(0, comment.length() - 1);
+        try {
+            comment = new String(comment.getBytes("utf-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return comment;
+    }
+
+    public static String tableNameToEntityName(String tableName) {
+        tableName = tableName.toLowerCase();
+
+        if (tableName.contains("t_")) {
+            tableName = tableName.substring(2, tableName.length());
+        }
+        String camelName = "";
+        if (tableName.contains("_")) {
+            String[] words = tableName.split("_");
+
+            for (int i = 0; i < words.length; i++) {
+                String word = words[i];
+                if (word.length() > 0) {
+                    camelName += StringUtil.upperFirstCase(word);
+                }
+            }
+        } else {
+            camelName = tableName;
+        }
+        return StringUtil.upperFirstCase(camelName);
+    }
+
+    private static String underlineToCamel(String name) {
+        name = name.toLowerCase();
+        String camelName = "";
+        if (name.contains("_")) {
+            String[] words = name.split("_");
+
+            for (int i = 0; i < words.length; i++) {
+                String word = words[i];
+
+                if (i == 0) {
+                    camelName = word;
+                } else {
+                    if (word.length() > 0) {
+                        camelName += StringUtil.upperFirstCase(word);
+                    }
+                }
+            }
+        } else {
+            camelName = name;
+        }
+        return StringUtil.lowerFirstCase(camelName);
+    }
+
+    public static void main1(String[] args) {
+        System.out.println(underlineToCamel("cn_name"));
+        System.out.println(underlineToCamel("device_name"));
+    }
+
+    private static void fillFieldTypeAndLength(FieldInfo field, String type) {
+        if (type.startsWith("varchar")) {
+            String length = type.substring("varchar(".length(), type.length() - 1);
+            type = "String";
+            field.setLength(length);
+        } else if (type.startsWith("int")) {
+            String length = type.substring("int(".length(), type.length() - 1);
+            type = "Integer";
+            field.setLength(length);
+        } else if (type.startsWith("tinyint")) {
+            String length = type.substring("tinyint(".length(), type.length() - 1);
+            // tinyint(1) 映射为Boolean类型， 大于1的映射为Integer
+            if ("1".equals(length)) {
+                type = "Boolean";
+            } else {
+                type = "Integer";
+            }
+        } else if (type.startsWith("bigint")) {
+            String length = type.substring("bigint(".length(), type.length() - 1);
+            type = "Long";
+            field.setLength(length);
+        } else if (type.startsWith("decimal")) {
+            type = "BigDecimal";
+        } else if ("double".equals(type)) {
+            type = "Double";
+        } else if ("date".equals(type)) {
+            type = "LocalDate";
+        } else if ("time".equals(type)) {
+            type = "LocalTime";
+        } else if ("datetime".equals(type)) {
+            type = "LocalDateTime";
+        }
+        field.setType(type);
+    }
+
     public static void main(String[] args) {
-        List<String> tableNames = getTableNames();
-        System.out.println("tableNames:" + tableNames);
-        for (String tableName : tableNames) {
-            System.out.println("ColumnComments:" + getColumnInfo(tableName));
+        List<TableInfo> tableInfos = getTableInfos();
+        System.out.println("tableInfos:" + tableInfos);
+        for (TableInfo tableInfo : tableInfos) {
+            for (FieldInfo field : getColumnInfo(tableInfo.getName())) {
+                System.out.println("column:" + field);
+
+            }
         }
     }
 }

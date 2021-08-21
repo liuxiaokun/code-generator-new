@@ -10,22 +10,17 @@ import java.util.Map;
  */
 public class ImportTypeMapping {
 
-    private String[] imports = {"java.lang.String", "java.lang.Integer", "java.time.LocalDate", "java.lang.Double",
-            "java.lang.Long", "java.math.BigDecimal","java.lang.Boolean","java.time.LocalTime"};
-
-    private String[] types = {"String", "Integer", "LocalDate", "Double", "Long", "BigDecimal", "Boolean", "LocalTime"};
-
-    private static Map<String, Integer> mapping = new HashMap<>();
+    public static final Map<String, String> mapping = new HashMap<>();
 
     static {
-        mapping.put("varchar", 0);
-        mapping.put("int", 1);
-        mapping.put("date", 2);
-        mapping.put("datetime", 3);
-        mapping.put("double", 4);
-        mapping.put("bigint", 5);
-        mapping.put("decimal", 6);
-        mapping.put("tinyint(1)", 7);
-        mapping.put("time", 8);
+        mapping.put("String", "java.lang.String");
+        mapping.put("Integer", "java.lang.Integer");
+        mapping.put("LocalDate", "java.time.LocalDate");
+        mapping.put("Double", "java.lang.Double");
+        mapping.put("Long", "java.lang.Long");
+        mapping.put("BigDecimal", "java.math.BigDecimal");
+        mapping.put("Boolean", "java.lang.Boolean");
+        mapping.put("LocalTime", "java.time.LocalTime");
     }
+
 }

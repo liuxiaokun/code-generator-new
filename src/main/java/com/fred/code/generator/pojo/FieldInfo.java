@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 
@@ -19,12 +20,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class Field implements Serializable {
-
-    /**
-     * 字段的数据类型
-     */
-    private String type;
+@Accessors(chain = true)
+public class FieldInfo implements Serializable {
 
     /**
      * 字段名
@@ -32,7 +29,17 @@ public class Field implements Serializable {
     private String name;
 
     /**
-     * 是否为空, TRUE 意思是可为空， False意思是不可为空
+     * 字段的数据类型
+     */
+    private String type;
+
+    /**
+     * 字段的长度（主要针对varchar类型）
+     */
+    private String length;
+
+    /**
+     * 是否为空, TRUE 意思是可为空， FALSE意思是不可为空
      */
     private Boolean nullable;
 
