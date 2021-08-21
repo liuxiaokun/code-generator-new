@@ -6,4 +6,15 @@ spring:
       data-source-properties:
         nullCatalogMeansCurrent: true
 
+project:
+  name: demo-project
+  version: 1.0.0
+  author: liuxiaokun
+  datasource:
+    driver: com.mysql.jdbc.Driver
+    url: jdbc:mysql://hadoop001:3306/sqoop_test?useUnicode=true&characterEncoding=utf8
+    username: root
+    password: 123456
+
+
 

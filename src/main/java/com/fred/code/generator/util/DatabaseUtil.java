@@ -3,8 +3,10 @@ package com.fred.code.generator.util;
 import com.fred.code.generator.pojo.FieldInfo;
 import com.fred.code.generator.pojo.TableInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,23 +19,18 @@ import java.util.Map;
  * @date 2021/8/19 15:06
  */
 @Slf4j
+@Component
 public class DatabaseUtil {
-
-    private static final String DRIVER = "com.mysql.jdbc.Driver";
-    private static final String URL = "jdbc:mysql://hadoop001:3306/sqoop_test?useUnicode=true&characterEncoding=utf8";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "123456";
-    private static Map<String, String> mapping = new HashMap<>();
 
 
     private static final String SQL = "SELECT * FROM ";
 
     static {
-        try {
-            Class.forName(DRIVER);
-        } catch (ClassNotFoundException e) {
-            log.error("can not load jdbc driver", e);
-        }
+//        try {
+//            Class.forName("DRIVER");
+//        } catch (ClassNotFoundException e) {
+//            log.error("can not load jdbc driver", e);
+//        }
     }
 
     /**
@@ -44,7 +41,7 @@ public class DatabaseUtil {
     public static Connection getConnection() {
         Connection conn = null;
         try {
-            conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            conn = DriverManager.getConnection("URL", "USERNAME", "PASSWORD");
         } catch (SQLException e) {
             log.error("get connection failure", e);
         }
@@ -173,12 +170,7 @@ public class DatabaseUtil {
         }
         comment = all.substring(index + 9);
         comment = comment.substring(0, comment.length() - 1);
-        try {
-            comment = new String(comment.getBytes("utf-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return comment;
+        return new String(comment.getBytes(Charset.defaultCharset()));
     }
 
     public static String tableNameToEntityName(String tableName) {
