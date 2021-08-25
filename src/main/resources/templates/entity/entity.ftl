@@ -14,7 +14,7 @@ import ${import};
  * @date ${datetime}
  */
 @Data
-public class ${entityName} extends BaseEntity {
+public class ${EntityName} extends BaseEntity {
 
 <#list fieldList as field>
     /**
